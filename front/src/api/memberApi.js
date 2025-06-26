@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_BASE_URL = 'http://localhost:8888/v1'
+const API_BASE_URL = 'http://localhost:8001/v1'
 
 // axios 인스턴스 생성
 const apiClient = axios.create({
@@ -24,13 +24,13 @@ apiClient.interceptors.request.use(
   }
 )
 
-// 멤버 정보 조회
-export const getMemberInfo = async (memberId) => {
+// 내 정보 조회 (JWT 토큰 사용)
+export const getMyInfo = async () => {
   try {
-    const response = await apiClient.get(`/member/${memberId}`)
+    const response = await apiClient.get('/member/me')
     return response.data
   } catch (error) {
-    console.error('멤버 정보 조회 실패:', error)
+    console.error('내 정보 조회 실패:', error)
     throw error
   }
 }

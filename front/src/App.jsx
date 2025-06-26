@@ -3,7 +3,6 @@ import styled from 'styled-components'
 import HeaderComponent from './components/HeaderComponent'
 import MemberCreate from './components/MemberCreate'
 import MemberLogin from './components/MemberLogin'
-import GoogleRedirect from './components/GoogleRedirect'
 import KakaoRedirect from './components/KakaoRedirect'
 import HomePage from './components/HomePage'
 import './App.css'
@@ -26,7 +25,6 @@ function App() {
         <Routes>
           <Route path="/member/create" element={<MemberCreate />} />
           <Route path="/member/login" element={<MemberLogin />} />
-          <Route path="/oauth/google/redirect" element={<GoogleRedirect />} />
           <Route path="/oauth/kakao/redirect" element={<KakaoRedirect />} />
           <Route path="/" element={<HomePage />} />
         </Routes>

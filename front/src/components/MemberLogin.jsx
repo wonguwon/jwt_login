@@ -83,13 +83,8 @@ const MemberLogin = () => {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   
-  const googleUrl = "https://accounts.google.com/o/oauth2/auth"
-  const googleClientId = "119834887772-jvvtg77vd6e6m1t3ndc5q9l8rrlklg6g.apps.googleusercontent.com"
-  const googleRedirectUrl = "http://localhost:3000/oauth/google/redirect"
-  const googleScope = "openid email profile"
-  
   const kakaoUrl = "https://kauth.kakao.com/oauth/authorize"
-  const kakaoClientId = "f7a09751e14f49f1e4bf0108a7c7029a"
+  const kakaoClientId = "b85b785349ad2bfcd11d636fcb0bf19a"
   const kakaoRedirectUrl = "http://localhost:3000/oauth/kakao/redirect"
 
   const memberLogin = async (e) => {
@@ -110,18 +105,13 @@ const MemberLogin = () => {
     }
   }
 
-  const googleLogin = () => {
-    const auth_uri = `${googleUrl}?client_id=${googleClientId}&redirect_uri=${googleRedirectUrl}&response_type=code&scope=${googleScope}`
-    window.location.href = auth_uri
-  }
-
   const kakaoLogin = () => {
     const auth_uri = `${kakaoUrl}?client_id=${kakaoClientId}&redirect_uri=${kakaoRedirectUrl}&response_type=code`
     window.location.href = auth_uri
   }
 
   const googleServerLogin = () => {
-    window.location.href = "http://localhost:8080/oauth2/authorization/google"
+    window.location.href = "http://localhost:8001/oauth2/authorization/google"
   }
 
   return (

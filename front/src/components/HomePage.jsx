@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import styled from 'styled-components'
-import { getMemberInfo } from '../api/memberApi'
+import { getMyInfo } from '../api/memberApi'
 
 const Container = styled.div`
   max-width: 1200px;
@@ -70,15 +70,12 @@ const HomePage = () => {
   useEffect(() => {
     const fetchMemberInfo = async () => {
       try {
-        const memberId = sessionStorage.getItem('memberId')
         const token = sessionStorage.getItem('token')
-        
-        if (!memberId || !token) {
+        if (!token) {
           setLoading(false)
           return
         }
-
-        const data = await getMemberInfo(memberId)
+        const data = await getMyInfo()
         setMemberInfo(data)
       } catch (err) {
         console.error('멤버 정보 조회 실패:', err)
@@ -87,7 +84,6 @@ const HomePage = () => {
         setLoading(false)
       }
     }
-
     fetchMemberInfo()
   }, [])
 
@@ -110,7 +106,7 @@ const HomePage = () => {
     )
   }
 
-  return (
+  return ( 
     <Container>
       <WelcomeCard>
         <Title>환영합니다!</Title>

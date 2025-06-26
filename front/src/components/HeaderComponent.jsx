@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import styled from 'styled-components'
 import Cookies from 'js-cookie'
-import { getMemberInfo } from '../api/memberApi'
+import { getMyInfo } from '../api/memberApi'
 
 const Header = styled.header`
   background-color: #1976d2;
@@ -72,18 +72,15 @@ const HeaderComponent = () => {
 
   const fetchUserInfo = async () => {
     try {
-      const memberId = sessionStorage.getItem('memberId')
-      if (memberId) {
-        const memberInfo = await getMemberInfo(memberId)
-        setUserName(memberInfo.name)
-      }
+      const memberInfo = await getMyInfo()
+      setUserName(memberInfo.name)
     } catch (error) {
       console.error('사용자 정보 조회 실패:', error)
     }
   }
 
   const doLogout = () => {
-    sessionStorage.clear()
+    sessionStorage.removeItem("token")
     setUserName('')
     setIsLogin(false)
     window.location.reload()

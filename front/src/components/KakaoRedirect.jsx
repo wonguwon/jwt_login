@@ -48,7 +48,7 @@ const KakaoRedirect = () => {
 
   const sendCodeToServer = async (code) => {
     try {
-      const response = await axios.post("http://localhost:8080/member/kakao/doLogin", { code })
+      const response = await axios.post("http://localhost:8001/v1/member/kakao/login", { code })
       const token = response.data.token
       sessionStorage.setItem("token", token)
       window.location.href = "/"
