@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import styled from 'styled-components'
 import Cookies from 'js-cookie'
 import { getMyInfo } from '../api/memberApi'
@@ -48,6 +48,17 @@ const Button = styled.button`
   }
 `
 
+const Logo = styled.h1`
+  margin: 0;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: color 0.2s;
+  
+  &:hover {
+    color: #e3f2fd;
+  }
+`
+
 const HeaderComponent = () => {
   const [isLogin, setIsLogin] = useState(false)
   const [userName, setUserName] = useState('')
@@ -90,7 +101,7 @@ const HeaderComponent = () => {
     <Header>
       <Container>
         <div>
-          <h1 style={{ margin: 0, fontSize: '1.5rem' }}>ShopIt</h1>
+          <Logo onClick={() => navigate('/')}>SPA</Logo>
         </div>
         <div>
           {!isLogin && (

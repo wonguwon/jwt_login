@@ -1,9 +1,9 @@
-# Google OAuth 로그인 구현 방식 정리
+# OAuth 로그인 구현 방식 정리
 
 ## 목차
 1. [개요](#개요)
-2. [Spring Security OAuth2 방식](#spring-security-oauth2-방식)
-3. [수동 구현 방식](#수동-구현-방식)
+2. [Spring Security OAuth2 방식 (Google 예시)](#spring-security-oauth2-방식-google-예시)
+3. [수동 구현 방식 (Kakao 예시)](#수동-구현-방식-kakao-예시)
 4. [두 방식의 비교](#두-방식의-비교)
 5. [실제 구현 예시](#실제-구현-예시)
 6. [정리 및 권장사항](#정리-및-권장사항)
@@ -12,15 +12,15 @@
 
 ## 개요
 
-Google OAuth 로그인을 구현하는 방법은 크게 두 가지가 있습니다:
-1. **Spring Security OAuth2 방식** (권장)
-2. **수동 구현 방식**
+OAuth 로그인을 구현하는 방법은 크게 두 가지가 있습니다:
+1. **Spring Security OAuth2 방식** (권장) - Google 예시
+2. **수동 구현 방식** - Kakao 예시
 
 각 방식의 특징과 흐름을 상세히 설명합니다.
 
 ---
 
-## Spring Security OAuth2 방식
+## Spring Security OAuth2 방식 (Google 예시)
 
 ### 특징
 - Spring Security가 OAuth2 인증 과정을 자동으로 처리
@@ -92,9 +92,9 @@ public class GoogleOauth2LoginSuccess extends SimpleUrlAuthenticationSuccessHand
             member = Member.builder()
                     .socialId(openId)
                     .email(email)
-                    .name(oAuth2User.getAttribute("name"))
-                    .password("")
-                    .phoneNumber("")
+                    .name(oAuth2User.getAttribute("name") != null ? oAuth2User.getAttribute("name") : "Google User")
+                    .password("") // OAuth 사용자는 비밀번호 없음
+                    .phoneNumber(null) // OAuth 사용자는 전화번호 없음
                     .socialType(SocialType.GOOGLE)
                     .build();
             memberRepository.save(member);
@@ -137,16 +137,16 @@ const fetchUserInfo = async () => {
 
 ---
 
-## 수동 구현 방식
+## 수동 구현 방식 (Kakao 예시)
 
 ### 특징
-- 프론트엔드에서 직접 Google OAuth URL 호출
+- 프론트엔드에서 직접 Kakao OAuth URL 호출
 - 인증 코드를 받아서 백엔드로 전송
 - 더 많은 제어 가능하지만 구현이 복잡함
 
 ### 전체 흐름
 ```
-1. 사용자 클릭 → 2. Google OAuth URL → 3. Google 인증 → 4. 프론트엔드로 코드 전달 → 5. 백엔드로 코드 전송 → 6. JWT 토큰 발급
+1. 사용자 클릭 → 2. Kakao OAuth URL → 3. Kakao 인증 → 4. 프론트엔드로 코드 전달 → 5. 백엔드로 코드 전송 → 6. JWT 토큰 발급
 ```
 
 ### 상세 흐름
@@ -154,33 +154,33 @@ const fetchUserInfo = async () => {
 #### 1. 프론트엔드 (React)
 ```javascript
 // MemberLogin.jsx
-const googleUrl = "https://accounts.google.com/o/oauth2/auth"
-const googleClientId = "your-google-client-id"
-const googleRedirectUrl = "http://localhost:3000/oauth/google/redirect"
-const googleScope = "openid email profile"
+const kakaoUrl = "https://kauth.kakao.com/oauth/authorize"
+const kakaoClientId = "your-kakao-javascript-key"  // JavaScript 키 사용
+const kakaoRedirectUrl = "http://localhost:3000/oauth/kakao/redirect"
+const kakaoScope = "profile_nickname profile_image account_email"
 
-const googleLogin = () => {
-  const auth_uri = `${googleUrl}?client_id=${googleClientId}&redirect_uri=${googleRedirectUrl}&response_type=code&scope=${googleScope}`
+const kakaoLogin = () => {
+  const auth_uri = `${kakaoUrl}?client_id=${kakaoClientId}&redirect_uri=${kakaoRedirectUrl}&response_type=code&scope=${kakaoScope}`
   window.location.href = auth_uri
 }
 
-// Google 로그인 버튼 클릭 시
+// Kakao 로그인 버튼 클릭 시
 <SocialImage
-  src={googleLoginImg}
-  alt="Google Login"
-  onClick={googleLogin}  // 이 함수 호출
+  src={kakaoLoginImg}
+  alt="Kakao Login"
+  onClick={kakaoLogin}  // 이 함수 호출
 />
 ```
 
-#### 2. Google 인증 과정
-1. 사용자가 Google OAuth URL로 리다이렉트
-2. Google에서 로그인 및 권한 승인
-3. Google이 인증 코드를 `googleRedirectUrl`로 전송
+#### 2. Kakao 인증 과정
+1. 사용자가 Kakao OAuth URL로 리다이렉트
+2. Kakao에서 로그인 및 권한 승인
+3. Kakao가 인증 코드를 `kakaoRedirectUrl`로 전송
 
 #### 3. 프론트엔드에서 코드 처리
 ```javascript
-// GoogleRedirect.jsx
-const GoogleRedirect = () => {
+// KakaoRedirect.jsx
+const KakaoRedirect = () => {
   useEffect(() => {
     const code = new URL(window.location.href).searchParams.get("code")
     sendCodeToServer(code)
@@ -188,13 +188,13 @@ const GoogleRedirect = () => {
 
   const sendCodeToServer = async (code) => {
     try {
-      const response = await axios.post("http://localhost:8001/member/google/login", { code })
+      const response = await axios.post("http://localhost:8001/member/kakao/login", { code })
       const token = response.data.token
       sessionStorage.setItem("token", token)
       window.location.href = "/"
     } catch (error) {
-      console.error("Google 로그인 실패:", error)
-      alert("Google 로그인에 실패했습니다.")
+      console.error("Kakao 로그인 실패:", error)
+      alert("Kakao 로그인에 실패했습니다.")
     }
   }
 }
@@ -203,20 +203,21 @@ const GoogleRedirect = () => {
 #### 4. 백엔드에서 코드 처리
 ```java
 // MemberController.java
-@PostMapping("/google/login")
-public ResponseEntity<?> googleLogin(@RequestBody RedirectDto redirectDto){
+@PostMapping("/kakao/login")
+public ResponseEntity<?> kakaoLogin(@RequestBody RedirectDto redirectDto){
     // 1. 인증 코드로 액세스 토큰 요청
-    AccessTokenDto accessTokenDto = googleService.getAccessToken(redirectDto.getCode());
+    AccessTokenDto accessTokenDto = kakaoService.getAccessToken(redirectDto.getCode());
     
     // 2. 액세스 토큰으로 사용자 정보 요청
-    GoogleProfileDto googleProfileDto = googleService.getGoogleProfile(accessTokenDto.getAccess_token());
+    KakaoProfileDto kakaoProfileDto = kakaoService.getKakaoProfile(accessTokenDto.getAccess_token());
     
     // 3. 회원가입 여부 확인 및 처리
-    Member originalMember = memberService.getMemberBySocialId(googleProfileDto.getSub());
+    Member originalMember = memberService.getMemberBySocialId(kakaoProfileDto.getId().toString());
     if(originalMember == null){
-        originalMember = memberService.createOauth(googleProfileDto.getSub(), 
-                                                  googleProfileDto.getEmail(), 
-                                                  SocialType.GOOGLE);
+        originalMember = memberService.createOauth(kakaoProfileDto.getId().toString(), 
+                                                  kakaoProfileDto.getKakao_account().getEmail(), 
+                                                  kakaoProfileDto.getProperties().getNickname(),
+                                                  SocialType.KAKAO);
     }
     
     // 4. JWT 토큰 발급
@@ -230,20 +231,20 @@ public ResponseEntity<?> googleLogin(@RequestBody RedirectDto redirectDto){
 }
 ```
 
-#### 5. GoogleService 구현
+#### 5. KakaoService 구현
 ```java
-// GoogleService.java
+// KakaoService.java
 @Service
-public class GoogleService {
+public class KakaoService {
     
     public AccessTokenDto getAccessToken(String code) {
-        // Google OAuth2 토큰 엔드포인트로 POST 요청
+        // Kakao OAuth2 토큰 엔드포인트로 POST 요청
         // client_id, client_secret, code, redirect_uri, grant_type 전송
         // 액세스 토큰 응답 받기
     }
     
-    public GoogleProfileDto getGoogleProfile(String accessToken) {
-        // Google User Info 엔드포인트로 GET 요청
+    public KakaoProfileDto getKakaoProfile(String accessToken) {
+        // Kakao User Info 엔드포인트로 GET 요청
         // Authorization 헤더에 Bearer 토큰 포함
         // 사용자 정보 응답 받기
     }
@@ -269,18 +270,17 @@ public class GoogleService {
 ## 실제 구현 예시
 
 ### 현재 프로젝트에서 사용 중인 방식
-현재 프로젝트에서는 **Spring Security OAuth2 방식**을 사용하고 있습니다.
 
-#### 활성화된 코드
+#### Google OAuth (Spring Security OAuth2 방식)
 - `googleServerLogin()` 함수
 - `GoogleOauth2LoginSuccess` 클래스
 - `application.yml`의 OAuth2 설정
 
-#### 비활성화된 코드 (정리 가능)
-- `googleLogin()` 함수
-- `GoogleRedirect.jsx` 컴포넌트
-- `/member/google/login` 엔드포인트
-- `GoogleService`, `GoogleProfileDto`, `AccessTokenDto`, `RedirectDto` 클래스들
+#### Kakao OAuth (수동 구현 방식)
+- `kakaoLogin()` 함수
+- `KakaoRedirect.jsx` 컴포넌트
+- `/member/kakao/login` 엔드포인트
+- `KakaoService`, `KakaoProfileDto`, `AccessTokenDto`, `RedirectDto` 클래스들
 
 ---
 
@@ -292,42 +292,37 @@ public class GoogleService {
 - Spring Security의 검증된 보안 기능 활용
 - 유지보수가 용이함
 
-### 2. 정리할 코드
-현재 프로젝트에서 다음 코드들을 정리할 수 있습니다:
+### 2. 현재 프로젝트 구조
+현재 프로젝트에서는 두 가지 방식을 모두 사용하고 있습니다:
 
-#### 프론트엔드
-```javascript
-// MemberLogin.jsx에서 제거 가능
-const googleUrl = "https://accounts.google.com/o/oauth2/auth"
-const googleClientId = "your-google-client-id"
-const googleRedirectUrl = "http://localhost:3000/oauth/google/redirect"
-const googleScope = "openid email profile"
-
-const googleLogin = () => {
-  // 이 함수 제거 가능
-}
-```
-
-#### 백엔드
-```java
-// MemberController.java에서 제거 가능
-@PostMapping("/google/login")
-public ResponseEntity<?> googleLogin(@RequestBody RedirectDto redirectDto) {
-  // 이 메서드 제거 가능
-}
-
-// 다음 클래스들도 제거 가능
-// - GoogleService
-// - GoogleProfileDto
-// - AccessTokenDto
-// - RedirectDto
-```
-
-### 3. 최종 구조
+#### Google OAuth (Spring Security OAuth2 방식)
 ```
 프론트엔드: googleServerLogin() → Spring OAuth2 엔드포인트
 백엔드: GoogleOauth2LoginSuccess → JWT 토큰 발급
 프론트엔드: 쿠키에서 토큰 추출 → 사용자 정보 조회
 ```
 
-이렇게 정리하면 깔끔하고 안전한 Google OAuth 로그인 시스템을 구축할 수 있습니다. 
+#### Kakao OAuth (수동 구현 방식)
+```
+프론트엔드: kakaoLogin() → Kakao OAuth URL → KakaoRedirect.jsx
+백엔드: /member/kakao/login → KakaoService → JWT 토큰 발급
+프론트엔드: 응답에서 토큰 추출 → 사용자 정보 조회
+```
+
+### 3. 앱키 설정
+#### Google OAuth
+- **Client ID**: OAuth 2.0 클라이언트 ID
+- **Client Secret**: OAuth 2.0 클라이언트 시크릿
+- **Redirect URI**: `http://localhost:8001/login/oauth2/code/google`
+
+#### Kakao OAuth
+- **JavaScript 키**: 프론트엔드에서 사용
+- **REST API 키**: 백엔드에서 사용
+- **Redirect URI**: `http://localhost:3000/oauth/kakao/redirect`
+
+### 4. 최종 권장사항
+1. **Google OAuth**: 현재 Spring Security OAuth2 방식 유지 (권장)
+2. **Kakao OAuth**: 현재 수동 구현 방식 유지 (Kakao는 Spring Security OAuth2 지원이 제한적)
+3. **일관성**: 가능하면 Spring Security OAuth2 방식으로 통일하는 것을 권장
+
+이렇게 정리하면 각 OAuth 제공자의 특성에 맞는 최적의 구현 방식을 사용할 수 있습니다. 

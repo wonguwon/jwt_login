@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import styled from 'styled-components'
+import { useNavigate } from 'react-router-dom'
 import { getMyInfo } from '../api/memberApi'
 
 const Container = styled.div`
@@ -62,10 +63,35 @@ const ErrorMessage = styled.div`
   margin-top: 1rem;
 `
 
+const FeatureCard = styled.div`
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  margin-top: 2rem;
+  text-align: center;
+`
+
+const FeatureButton = styled.button`
+  background: #1976d2;
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background: #1565c0;
+  }
+`
+
 const HomePage = () => {
   const [memberInfo, setMemberInfo] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const navigate = useNavigate()
 
   useEffect(() => {
     const fetchMemberInfo = async () => {
@@ -135,6 +161,16 @@ const HomePage = () => {
           <p>사용자 정보를 불러올 수 없습니다.</p>
         )}
       </WelcomeCard>
+      
+      {memberInfo && (
+        <FeatureCard>
+          <h2>서비스 이용하기</h2>
+          <p>파일 업로드 및 다운로드 기능을 이용해보세요.</p>
+          <FeatureButton onClick={() => navigate('/files')}>
+            파일 업로드/다운로드
+          </FeatureButton>
+        </FeatureCard>
+      )}
     </Container>
   )
 }

@@ -29,11 +29,13 @@ public class GoogleOauth2LoginSuccess extends SimpleUrlAuthenticationSuccessHand
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException {
 
-//        oauth프로필 추출
+        //Spring Security가 OAuth2 로그인 과정에서 만들어주는 사용자 정보 객체
+        //내부에 Google이 응답한 사용자 JSON 정보가 key-value 형식으로 담김
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
         String openId = oAuth2User.getAttribute("sub");
         String email = oAuth2User.getAttribute("email");
-//        회원가입 여부 확인
+
+        //회원가입 여부 확인
         Member member = memberRepository.findBySocialId(openId).orElse(null);
         if(member == null){
             member = Member.builder()

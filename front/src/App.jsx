@@ -5,6 +5,7 @@ import MemberCreate from './components/MemberCreate'
 import MemberLogin from './components/MemberLogin'
 import KakaoRedirect from './components/KakaoRedirect'
 import HomePage from './components/HomePage'
+import FileUpload from './components/FileUpload'
 import './App.css'
 
 const AppContainer = styled.div`
@@ -23,10 +24,11 @@ function App() {
       <HeaderComponent />
       <MainContent>
         <Routes>
-          <Route path="/member/create" element={<MemberCreate />} />
-          <Route path="/member/login" element={<MemberLogin />} />
-          <Route path="/oauth/kakao/redirect" element={<KakaoRedirect />} />
           <Route path="/" element={<HomePage />} />
+          <Route path="/member/login" element={<MemberLogin />} />
+          <Route path="/member/create" element={<MemberCreate />} />
+          <Route path="/oauth/kakao/callback" element={<KakaoRedirect />} />
+          <Route path="/files" element={<FileUpload />} />
         </Routes>
       </MainContent>
     </AppContainer>
