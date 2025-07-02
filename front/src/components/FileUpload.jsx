@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { getUploadUrl, uploadFileToS3, getAllFiles, getDownloadUrl } from '../api/fileApi';
 
-const CLOUDFRONT_URL = 'https://dwxo8vkl18znf.cloudfront.net/';
+const CLOUDFRONT_URL = 'https://dwxo8vkl18znf.cloudfront.net';
 
 const Container = styled.div`
   max-width: 800px;

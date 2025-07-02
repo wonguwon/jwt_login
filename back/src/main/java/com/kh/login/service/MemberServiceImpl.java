@@ -66,8 +66,8 @@ public class MemberServiceImpl implements MemberService {
     }
 
     @Override
-    public Member getMemberBySocialId(String socialId){
-        Member member = memberRepository.findBySocialId(socialId).orElse(null);
+    public Member getMemberBySocialId(String socialId, SocialType socialType){
+        Member member = memberRepository.findBySocialIdAndSocialType(socialId, socialType).orElse(null);
         return member;
     }
 

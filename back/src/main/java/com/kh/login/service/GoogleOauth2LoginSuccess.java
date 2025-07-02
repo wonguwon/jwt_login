@@ -36,7 +36,7 @@ public class GoogleOauth2LoginSuccess extends SimpleUrlAuthenticationSuccessHand
         String email = oAuth2User.getAttribute("email");
 
         //회원가입 여부 확인
-        Member member = memberRepository.findBySocialId(openId).orElse(null);
+        Member member = memberRepository.findBySocialIdAndSocialType(openId, SocialType.GOOGLE).orElse(null);
         if(member == null){
             member = Member.builder()
                     .socialId(openId)

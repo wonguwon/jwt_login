@@ -11,6 +11,6 @@ public interface MemberService {
     Member login(MemberLoginDto memberLoginDto);
     MemberResponseDto getMemberInfoByEmail(String email);
 
-    Member getMemberBySocialId(String socialId);
+    Member getMemberBySocialId(String socialId, SocialType socialType);
     Member createOauth(String socialId, String email, String name, SocialType socialType);
 }
