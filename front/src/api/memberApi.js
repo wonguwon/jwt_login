@@ -31,4 +31,22 @@ export const signup = async (signupData) => {
     console.error('회원가입 실패:', error)
     throw error
   }
-} 
+}
+
+export const sendEmailCode = async (email) => {
+  try {
+    const response = await apiClient.post('/auth/email/send', { email });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const verifyEmailCode = async (email, code) => {
+  try {
+    const response = await apiClient.post('/auth/email/verify', { email, code });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}; 

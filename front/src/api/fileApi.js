@@ -6,7 +6,7 @@ export const getPresignedUploadUrl = async ({ filename, contentType }) => {
     const formData = new URLSearchParams();
     formData.append('filename', filename);
     formData.append('contentType', contentType);
-    const response = await axiosInstance.post('/api/files/upload-url', formData, {
+    const response = await axiosInstance.post('/v1/files/upload-url', formData, {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     });
     if (response.data && response.data.url) {
@@ -21,12 +21,24 @@ export const getPresignedUploadUrl = async ({ filename, contentType }) => {
 };
 
 export const getUploadUrl = async (fileName, contentType, path = '') => {
-    const response = await axiosInstance.post('/api/files/upload-url', null, {
+    const response = await axiosInstance.post('/v1/files/upload-url', null, {
         params: {
-            fileName,
-            contentType,
+            file_name: fileName,
+            content_type: contentType,
             path
         }
+    });
+    return {
+        presignedUrl: response.data.presigned_url,
+        changeName: response.data.change_name
+    };
+};
+
+export const completeUpload = async (originalName, changeName, contentType) => {
+    const response = await axiosInstance.post('/v1/files/complete', {
+        original_name: originalName,
+        change_name: changeName,
+        content_type: contentType
     });
     return response.data;
 };
@@ -42,11 +54,14 @@ export const uploadFileToS3 = async (presignedUrl, file) => {
 };
 
 export const getDownloadUrl = async (fileId) => {
-    const response = await axiosInstance.get(`/api/files/${fileId}/download-url`);
-    return response.data;
+    const response = await axiosInstance.get(`/v1/files/${fileId}/download-url`);
+    return {
+        presignedUrl: response.data.presigned_url,
+        originalFileName: response.data.original_file_name
+    };
 };
 
 export const getAllFiles = async () => {
-    const response = await axiosInstance.get('/api/files');
+    const response = await axiosInstance.get('/v1/files');
     return response.data;
 }; 

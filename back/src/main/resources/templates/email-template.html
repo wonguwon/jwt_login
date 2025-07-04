@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>메일 제목</title>
+</head>
+<body style="font-family: sans-serif; padding: 20px;">
+<h2 th:text="${title}">기본 제목</h2>
+<p th:utext="${body}">내용이 여기에 들어갑니다.</p>
+<hr>
+<p style="font-size: 12px; color: gray;">This email was sent from Spring Boot App.</p>
+</body>
+</html>

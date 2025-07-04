@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { getUploadUrl, uploadFileToS3, getAllFiles, getDownloadUrl } from '../api/fileApi';
+import { getUploadUrl, uploadFileToS3, getAllFiles, getDownloadUrl, completeUpload } from '../api/fileApi';
 
-const CLOUDFRONT_URL = 'https://dwxo8vkl18znf.cloudfront.net';
+const CLOUDFRONT_URL = 'https://dwxo8vkl18znf.cloudfront.net/';
 
 const Container = styled.div`
   max-width: 800px;
@@ -183,17 +183,15 @@ const FileUpload = () => {
         setIsUploading(true);
         try {
             // 1. Presigned URL 발급 (path와 fileName 분리해서 전송)
-            const { presignedUrl, fileId } = await getUploadUrl(selectedFile.name, selectedFile.type, path);
-            
+            const { presignedUrl, changeName } = await getUploadUrl(selectedFile.name, selectedFile.type, path);
             // 2. S3에 파일 업로드
             await uploadFileToS3(presignedUrl, selectedFile);
-            
-            // 3. 파일 목록 새로고침
+            // 3. 업로드 완료 후 DB 저장
+            await completeUpload(selectedFile.name, changeName, selectedFile.type);
+            // 4. 파일 목록 새로고침
             await loadFiles();
-            
-            // 4. 파일 선택 초기화
+            // 5. 파일 선택 초기화
             setSelectedFile(null);
-            
             alert('파일이 성공적으로 업로드되었습니다.');
         } catch (error) {
             console.error('파일 업로드 실패:', error);
