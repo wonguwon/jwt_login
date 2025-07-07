@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import styled from 'styled-components'
 import { signup, sendEmailCode, verifyEmailCode } from '../api/memberApi'
-import Timer from './Timer'
+import Timer from '../components/Timer'
 
 const Container = styled.div`
   max-width: 1200px;

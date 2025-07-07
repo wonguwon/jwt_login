@@ -40,7 +40,8 @@ public class SecurityConfig {
                                 "/v1/member/signup",    //일반 회원가입
                                 "/v1/member/kakao/login",    // 카카오 로그인 (수동 구현)
                                 "/auth/email/*",
-                                "/oauth2/**"                // Spring OAuth2 클라이언트 경로
+                                "/oauth2/**",                // Spring OAuth2 클라이언트 경로
+                                "/connect/**"
                         ).permitAll()
                         .anyRequest().authenticated() // 나머지 모든 요청은 인증 필요
                 )

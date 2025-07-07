@@ -9,7 +9,10 @@ import com.kh.login.exception.InvalidCredentialsException;
 import com.kh.login.exception.UserAlreadyExistsException;
 import com.kh.login.exception.UserNotFoundException;
 import com.kh.login.repository.MemberRepository;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -83,5 +86,16 @@ public class MemberServiceImpl implements MemberService {
                 .build();
         memberRepository.save(member);
         return member;
+    }
+
+    @Override
+    public List<MemberResponseDto> findAll() {
+        List<Member> members = memberRepository.findAll();
+
+        List<MemberResponseDto> memberListResDtos = members.stream()
+                .map(MemberResponseDto::from)
+                .collect(Collectors.toList());
+
+        return memberListResDtos;
     }
 }

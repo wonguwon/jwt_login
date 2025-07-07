@@ -103,6 +103,9 @@ const HomePage = () => {
         }
         const data = await getMyInfo()
         setMemberInfo(data)
+        if (data && data.email) {
+          sessionStorage.setItem('email', data.email)
+        }
       } catch (err) {
         console.error('멤버 정보 조회 실패:', err)
         setError('멤버 정보를 불러오는데 실패했습니다.')
@@ -163,13 +166,22 @@ const HomePage = () => {
       </WelcomeCard>
       
       {memberInfo && (
-        <FeatureCard>
-          <h2>서비스 이용하기</h2>
-          <p>파일 업로드 및 다운로드 기능을 이용해보세요.</p>
-          <FeatureButton onClick={() => navigate('/files')}>
-            파일 업로드/다운로드
-          </FeatureButton>
-        </FeatureCard>
+        <>
+          <FeatureCard>
+            <h2>서비스 이용하기</h2>
+            <p>파일 업로드 및 다운로드 기능을 이용해보세요.</p>
+            <FeatureButton onClick={() => navigate('/files')}>
+              파일 업로드/다운로드
+            </FeatureButton>
+          </FeatureCard>
+          <FeatureCard>
+            <h2>채팅 이용하기</h2>
+            <p>채팅 기능을 이용해보세요.</p>
+            <FeatureButton onClick={() => navigate('/chat')}>
+              채팅 이용하기
+            </FeatureButton>
+          </FeatureCard>
+        </>
       )}
     </Container>
   )

@@ -31,6 +31,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 	implementation 'org.springframework.boot:spring-boot-starter-mail' //메일
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf' //템플릿엔진
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'//소켓
 
 	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'

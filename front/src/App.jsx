@@ -1,11 +1,17 @@
 import { Routes, Route } from 'react-router-dom'
 import styled from 'styled-components'
 import HeaderComponent from './components/HeaderComponent'
-import MemberCreate from './components/MemberCreate'
-import MemberLogin from './components/MemberLogin'
+import MemberCreate from './pages/MemberCreate'
+import MemberLogin from './pages/MemberLogin'
 import KakaoRedirect from './components/KakaoRedirect'
-import HomePage from './components/HomePage'
+import HomePage from './pages/HomePage'
 import FileUpload from './components/FileUpload'
+import MemberList from './pages/MemberList'
+import GroupChattingList from './pages/GroupChattingList'
+import MyChatPage from './pages/MyChatPage'
+import ChatMenuPage from './pages/ChatMenuPage'
+import ChatPage from './pages/ChatPage'
+// import StompChatPage from './pages/StompChatPage'
 import './App.css'
 
 const AppContainer = styled.div`
@@ -29,6 +35,12 @@ function App() {
           <Route path="/member/create" element={<MemberCreate />} />
           <Route path="/oauth/kakao/callback" element={<KakaoRedirect />} />
           <Route path="/files" element={<FileUpload />} />
+          <Route path="/member/list" element={<MemberList />} />
+          <Route path="/chat/rooms" element={<GroupChattingList />} />
+          <Route path="/mychats" element={<MyChatPage />} />
+          <Route path="/chat" element={<ChatMenuPage />} />
+          <Route path="/chatpage/:roomId" element={<ChatPage />} />
+          {/* <Route path="/chatpage/:roomId" element={<StompChatPage />} /> */}
         </Routes>
       </MainContent>
     </AppContainer>
