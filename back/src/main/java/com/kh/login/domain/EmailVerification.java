@@ -34,14 +34,14 @@ public class EmailVerification {
         createdAt = LocalDateTime.now();
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-    public String getCode() { return code; }
-    public void setCode(String code) { this.code = code; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-    public boolean isVerified() { return verified; }
-    public void setVerified(boolean verified) { this.verified = verified; }
-} 
+    public void changeVerified(boolean verified){
+        this.verified = verified;
+    }
+
+    public void setData(String email, String code, LocalDateTime createdAt, boolean verified) {
+        this.email = email;
+        this.code = code;
+        this.createdAt = createdAt;
+        this.verified = verified;
+    }
+}

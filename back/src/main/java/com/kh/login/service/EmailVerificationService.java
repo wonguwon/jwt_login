@@ -21,10 +21,7 @@ public class EmailVerificationService {
         String code = String.format("%06d", new Random().nextInt(999999));
 
         EmailVerification verification = new EmailVerification();
-        verification.setEmail(email);
-        verification.setCode(code);
-        verification.setCreatedAt(LocalDateTime.now());
-        verification.setVerified(false);
+        verification.setData(email, code, LocalDateTime.now(), false);
         repository.save(verification);
 
         // 메일 발송
@@ -44,7 +41,7 @@ public class EmailVerificationService {
         if (!verification.isVerified()
             && verification.getCode().equals(code)
             && verification.getCreatedAt().isAfter(LocalDateTime.now().minusMinutes(3))) {
-            verification.setVerified(true);
+            verification.changeVerified(true);
             repository.save(verification);
             return true;
         }

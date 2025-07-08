@@ -33,10 +33,10 @@ const ChatBox = styled.div`
 `;
 const ChatMessage = styled.div`
   margin-bottom: 10px;
-  text-align: ${props => (props.sent ? 'right' : 'left')};
+  text-align: left;
 `;
 const Sender = styled.strong`
-  color: #1976d2;
+  color: ${props => props.me ? '#43a047' : '#1976d2'};
 `;
 const FormRow = styled.div`
   display: flex;
@@ -80,10 +80,10 @@ const BackButton = styled.button`
   }
 `;
 
-function getWsUrl() {
-  //const base = import.meta.env.VITE_API_BASE_URL;/
+function getWsUrl(roomId) {
   const base = "http://localhost:8001";
-  return base.replace(/^http/, 'ws') + '/connect';
+  const token = sessionStorage.getItem('token');
+  return base.replace(/^http/, 'ws') + `/connect?roomId=${roomId}&token=${token}`;
 }
 
 const ChatPage = () => {
@@ -124,7 +124,7 @@ const ChatPage = () => {
   }, [messages]);
 
   const connectWebsocket = () => {
-    const websocket = new WebSocket(getWsUrl());
+    const websocket = new WebSocket(getWsUrl(roomId));
     websocket.onopen = () => {
       console.log('WebSocket 연결됨');
     };
@@ -177,8 +177,8 @@ const ChatPage = () => {
         <Title>채팅</Title>
         <ChatBox ref={chatBoxRef}>
           {messages.map((msg, index) => (
-            <ChatMessage key={index} sent={msg.senderEmail === senderEmail}>
-              <Sender>{msg.senderEmail}: </Sender>{msg.message}
+            <ChatMessage key={index}>
+              <Sender me={msg.senderEmail === senderEmail}>{msg.senderEmail}: </Sender>{msg.message}
             </ChatMessage>
           ))}
         </ChatBox>

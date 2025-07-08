@@ -1,18 +1,16 @@
 package com.kh.login.config;//package com.example.chatserver.chat.config;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 
+@RequiredArgsConstructor
 @Configuration
 @EnableWebSocket
 public class WebSocketConfig implements WebSocketConfigurer {
     private final SimpleWebSocketHandler simpleWebSocketHandler;
-
-    public WebSocketConfig(SimpleWebSocketHandler simpleWebSocketHandler) {
-        this.simpleWebSocketHandler = simpleWebSocketHandler;
-    }
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {

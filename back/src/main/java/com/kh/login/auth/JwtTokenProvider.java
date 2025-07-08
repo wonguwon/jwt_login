@@ -46,4 +46,12 @@ public class JwtTokenProvider {
         // SecurityContext에서 Authentication 객체를 통해 이메일 정보를 가져옴
         return SecurityContextHolder.getContext().getAuthentication().getName();
     }
+
+    public Claims parseClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(SECRET_KEY)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
 }
