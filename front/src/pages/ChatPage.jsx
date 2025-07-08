@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import apiClient from '../api/axiosInstance';
+import { getChatHistory, readChatRoom } from '../api/chatApi';
 
 const Wrapper = styled.div`
   min-height: calc(100vh - 70px);
@@ -101,20 +101,19 @@ const ChatPage = () => {
     
     const loadChatHistory = async () => {
       try {
-        const response = await apiClient.get(`/v1/chat/history/${roomId}`);
-        setMessages(response.data);
+        const data = await getChatHistory(roomId);
+        setMessages(data);
       } catch (error) {
-        console.error('채팅 히스토리 로드 실패:', error);
+        console.error(error);
       }
     };
-    
     loadChatHistory();
     connectWebsocket();
     
     return () => {
       disconnectWebSocket();
     };
-    // eslint-disable-next-line
+    
   }, [roomId]);
 
   useEffect(() => {
@@ -161,9 +160,9 @@ const ChatPage = () => {
 
   const disconnectWebSocket = async () => {
     try {
-      await apiClient.post(`/v1/chat/room/${roomId}/read`);
+      await readChatRoom(roomId);
     } catch (error) {
-      console.error('읽음 처리 실패:', error);
+      console.error(error)
     }
     if (ws) {
       ws.close();

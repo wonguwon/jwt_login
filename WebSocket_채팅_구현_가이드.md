@@ -105,19 +105,18 @@ WebSocket 방식:
 implementation 'org.springframework.boot:spring-boot-starter-websocket'
 implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 implementation 'com.fasterxml.jackson.core:jackson-databind'
+implementation 'io.jsonwebtoken:jjwt-api:0.11.2'
+implementation 'io.jsonwebtoken:jjwt-impl:0.11.2'
+implementation 'io.jsonwebtoken:jjwt-jackson:0.11.2'
 ```
 
 ### 2. WebSocket 설정
 ```java
 @Configuration
 @EnableWebSocket
+@RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketConfigurer {
-    
     private final SimpleWebSocketHandler simpleWebSocketHandler;
-
-    public WebSocketConfig(SimpleWebSocketHandler simpleWebSocketHandler) {
-        this.simpleWebSocketHandler = simpleWebSocketHandler;
-    }
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
@@ -131,49 +130,99 @@ public class WebSocketConfig implements WebSocketConfigurer {
 ```java
 @Component
 public class SimpleWebSocketHandler extends TextWebSocketHandler {
-    
-    private final Set<WebSocketSession> sessions = ConcurrentHashMap.newKeySet();
+    // roomId별 세션 관리
+    private final Map<Long, Set<WebSocketSession>> roomSessions = new ConcurrentHashMap<>();
     private final ChatService chatService;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Autowired
-    public SimpleWebSocketHandler(ChatService chatService) {
+    public SimpleWebSocketHandler(ChatService chatService, JwtTokenProvider jwtTokenProvider) {
         this.chatService = chatService;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
     @Override
-    public void afterConnectionEstablished(WebSocketSession session) {
-        sessions.add(session);
-        System.out.println("Connected: " + session.getId());
+    public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+        // 쿼리 파라미터에서 roomId, token 추출
+        String query = session.getUri().getQuery();
+        Long roomId = null;
+        String token = null;
+        if (query != null) {
+            String[] params = query.split("&");
+            for (String param : params) {
+                if (param.startsWith("roomId=")) {
+                    roomId = Long.parseLong(param.substring(7));
+                } else if (param.startsWith("token=")) {
+                    token = param.substring(6);
+                }
+            }
+        }
+        if (roomId == null || token == null) {
+            session.close();
+            return;
+        }
+        // JWT 인증
+        try {
+            jwtTokenProvider.parseClaims(token);
+            System.out.println("WebSocket JWT 인증 성공");
+        } catch (Exception e) {
+            System.out.println("WebSocket JWT 인증 실패: " + e.getMessage());
+            session.close();
+            return;
+        }
+        session.getAttributes().put("roomId", roomId);
+        roomSessions.computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet()).add(session);
+        System.out.println("Connected : " + session.getId() + " to room " + roomId);
     }
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         String payload = message.getPayload();
-        
-        // 1. JSON 파싱
+        System.out.println("received message : " + payload);
         ChatMessageDto chatMessageDto = objectMapper.readValue(payload, ChatMessageDto.class);
-        
-        // 2. DB 저장
         chatService.saveMessage(chatMessageDto.getRoomId(), chatMessageDto);
-        
-        // 3. 모든 세션에 브로드캐스트
-        for (WebSocketSession s : sessions) {
-            if (s.isOpen()) {
-                s.sendMessage(new TextMessage(payload));
+        Long roomId = chatMessageDto.getRoomId();
+        Set<WebSocketSession> targetSessions = roomSessions.get(roomId);
+        if (targetSessions != null) {
+            for (WebSocketSession s : targetSessions) {
+                if (s.isOpen()) {
+                    s.sendMessage(new TextMessage(payload));
+                }
             }
         }
     }
 
     @Override
-    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
-        sessions.remove(session);
-        System.out.println("Disconnected: " + session.getId());
+    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
+        Long roomId = (Long) session.getAttributes().get("roomId");
+        if (roomId != null) {
+            Set<WebSocketSession> sessions = roomSessions.get(roomId);
+            if (sessions != null) {
+                sessions.remove(session);
+                if (sessions.isEmpty()) {
+                    roomSessions.remove(roomId);
+                }
+            }
+        }
+        System.out.println("disconnected!!");
     }
 }
 ```
 
 ### 4. DTO 클래스
+
+채팅 시스템에서는 다음과 같이 3가지 DTO를 사용합니다.
+
+| DTO명                | 주요 필드                                      | 용도 및 설명                                  |
+|----------------------|-----------------------------------------------|-----------------------------------------------|
+| ChatMessageDto       | roomId, message, senderEmail                  | 채팅 메시지 송수신(WebSocket, DB 저장 등)     |
+| ChatRoomListResDto   | roomId, roomName                              | 채팅방 목록 조회(그룹 채팅방 리스트 등)        |
+| MyChatListResDto     | roomId, roomName, isGroupChat, unReadCount    | 내가 속한 채팅방 목록 및 안 읽은 메시지 수 등  |
+
+각 DTO의 실제 코드 예시는 다음과 같습니다.
+
+#### ChatMessageDto
 ```java
 @Data
 @NoArgsConstructor
@@ -186,34 +235,156 @@ public class ChatMessageDto {
 }
 ```
 
+#### ChatRoomListResDto
+```java
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class ChatRoomListResDto {
+    private Long roomId;
+    private String roomName;
+}
+```
+
+#### MyChatListResDto
+```java
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class MyChatListResDto {
+    private Long roomId;
+    private String roomName;
+    private String isGroupChat;
+    private Long unReadCount;
+}
+```
+
 ### 5. 채팅 서비스
 ```java
+@RequiredArgsConstructor
 @Service
 @Transactional
 public class ChatService {
-    
-    private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomRepository chatRoomRepository;
+    private final ChatParticipantRepository chatParticipantRepository;
+    private final ChatMessageRepository chatMessageRepository;
+    private final ReadStatusRepository readStatusRepository;
     private final MemberRepository memberRepository;
 
-    public void saveMessage(Long roomId, ChatMessageDto chatMessageDto) {
+    public void saveMessage(Long roomId, ChatMessageDto chatMessageReqDto){
         // 채팅방 조회
-        ChatRoom chatRoom = chatRoomRepository.findById(roomId)
-            .orElseThrow(() -> new EntityNotFoundException("Room not found"));
-
+        ChatRoom chatRoom = chatRoomRepository.findById(roomId).orElseThrow(() -> new EntityNotFoundException("room cannot be found"));
         // 보낸 사람 조회
-        Member sender = memberRepository.findByEmail(chatMessageDto.getSenderEmail())
-            .orElseThrow(() -> new EntityNotFoundException("Member not found"));
-
+        Member sender = memberRepository.findByEmail(chatMessageReqDto.getSenderEmail()).orElseThrow(() -> new EntityNotFoundException("member cannot be found"));
         // 메시지 저장
         ChatMessage chatMessage = ChatMessage.builder()
                 .chatRoom(chatRoom)
                 .member(sender)
-                .content(chatMessageDto.getMessage())
+                .content(chatMessageReqDto.getMessage())
                 .build();
-        
         chatMessageRepository.save(chatMessage);
+        // 사용자별로 읽음여부 저장
+        List<ChatParticipant> chatParticipants = chatParticipantRepository.findByChatRoom(chatRoom);
+        for(ChatParticipant c : chatParticipants){
+            ReadStatus readStatus = ReadStatus.builder()
+                    .chatRoom(chatRoom)
+                    .member(c.getMember())
+                    .chatMessage(chatMessage)
+                    .isRead(c.getMember().equals(sender))
+                    .build();
+            readStatusRepository.save(readStatus);
+        }
     }
+}
+```
+
+### 5. 채팅 엔티티 구조
+
+채팅 시스템에서 사용하는 주요 엔티티는 다음과 같습니다.
+
+| 엔티티명           | 주요 필드 및 관계                                              | 용도 및 설명                                  |
+|--------------------|-------------------------------------------------------------|-----------------------------------------------|
+| ChatMessage        | id, chatRoom, member, content, readStatuses                 | 채팅 메시지(내용, 보낸 사람, 방, 읽음상태 등) |
+| ChatRoom           | id, name, isGroupChat, chatParticipants, chatMessages       | 채팅방(이름, 그룹여부, 참여자, 메시지 등)     |
+| ChatParticipant    | id, chatRoom, member                                        | 채팅방 참여자(방, 회원)                       |
+
+각 엔티티의 실제 코드 예시는 다음과 같습니다.
+
+#### ChatMessage
+```java
+@Entity
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Getter
+public class ChatMessage extends BaseTimeEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "chat_room_id", nullable = false)
+    private ChatRoom chatRoom;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
+
+    @Column(nullable = false, length = 500)
+    private String content;
+
+    @OneToMany(mappedBy = "chatMessage", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<ReadStatus> readStatuses = new ArrayList<>();
+}
+```
+
+#### ChatRoom
+```java
+@Entity
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Getter
+public class ChatRoom extends BaseTimeEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
+    private String name;
+
+    @Builder.Default
+    private String isGroupChat = "N"; // "Y" 또는 "N"
+
+    @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.REMOVE)
+    private List<ChatParticipant> chatParticipants = new ArrayList<>();
+
+    @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<ChatMessage> chatMessages = new ArrayList<>();
+}
+```
+
+#### ChatParticipant
+```java
+@Entity
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Getter
+public class ChatParticipant extends BaseTimeEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "chat_room_id", nullable = false)
+    private ChatRoom chatRoom;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 }
 ```
 
