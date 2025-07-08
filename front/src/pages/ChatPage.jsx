@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { useParams } from 'react-router-dom';
+import apiClient from '../api/axiosInstance';
 
 const Wrapper = styled.div`
-  min-height: 100vh;
+  min-height: calc(100vh - 70px);
   display: flex;
   align-items: center;
   justify-content: center;
   background: #f5f5f5;
+  position: relative;
 `;
 const Card = styled.div`
   background: #fff;
@@ -15,13 +17,13 @@ const Card = styled.div`
   box-shadow: 0 4px 6px rgba(0,0,0,0.08);
   padding: 2rem;
   width: 100%;
-  max-width: 500px;
+  max-width: 600px;
 `;
 const Title = styled.h2`
   text-align: center;
   margin-bottom: 1.5rem;
 `;
-const MessageBox = styled.div`
+const ChatBox = styled.div`
   height: 300px;
   overflow-y: auto;
   border: 1px solid #ddd;
@@ -29,9 +31,12 @@ const MessageBox = styled.div`
   padding: 12px;
   background: #fafafa;
 `;
-const Message = styled.div`
-  font-size: 1rem;
-  margin-bottom: 8px;
+const ChatMessage = styled.div`
+  margin-bottom: 10px;
+  text-align: ${props => (props.sent ? 'right' : 'left')};
+`;
+const Sender = styled.strong`
+  color: #1976d2;
 `;
 const FormRow = styled.div`
   display: flex;
@@ -57,6 +62,23 @@ const Button = styled.button`
     background: #115293;
   }
 `;
+const BackButton = styled.button`
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  background: #e3e3e3;
+  color: #1976d2;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1.2rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  z-index: 10;
+  &:hover {
+    background: #bbdefb;
+  }
+`;
 
 function getWsUrl() {
   //const base = import.meta.env.VITE_API_BASE_URL;/
@@ -68,38 +90,67 @@ const ChatPage = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [ws, setWs] = useState(null);
-  const messageBoxRef = useRef(null);
+  const [senderEmail, setSenderEmail] = useState('');
   const { roomId } = useParams();
-  const senderEmail = sessionStorage.getItem('email');
+  const chatBoxRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const websocket = new WebSocket(getWsUrl());
-    websocket.onopen = () => {};
-    websocket.onmessage = (event) => {
-      setMessages(prev => [...prev, event.data]);
+    const email = sessionStorage.getItem("email");
+    setSenderEmail(email);
+    
+    const loadChatHistory = async () => {
+      try {
+        const response = await apiClient.get(`/v1/chat/history/${roomId}`);
+        setMessages(response.data);
+      } catch (error) {
+        console.error('채팅 히스토리 로드 실패:', error);
+      }
     };
-    websocket.onclose = () => {};
-    setWs(websocket);
+    
+    loadChatHistory();
+    connectWebsocket();
+    
     return () => {
-      websocket.close();
+      disconnectWebSocket();
     };
-  }, []);
+    // eslint-disable-next-line
+  }, [roomId]);
 
   useEffect(() => {
-    if (messageBoxRef.current) {
-      messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight;
+    if (chatBoxRef.current) {
+      chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
     }
   }, [messages]);
 
+  const connectWebsocket = () => {
+    const websocket = new WebSocket(getWsUrl());
+    websocket.onopen = () => {
+      console.log('WebSocket 연결됨');
+    };
+    websocket.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        setMessages(prev => [...prev, message]);
+      } catch (error) {
+        console.error('메시지 파싱 실패:', error);
+      }
+    };
+    websocket.onclose = () => {
+      console.log('WebSocket 연결 종료');
+    };
+    setWs(websocket);
+  };
+
   const sendMessage = () => {
-    if (newMessage.trim() && ws) {
-      ws.send(JSON.stringify({
-        roomId: Number(roomId),
-        senderEmail: senderEmail,
-        message: newMessage
-      }));
-      setNewMessage('');
-    }
+    if (newMessage.trim() === "" || !ws) return;
+    const message = {
+      roomId: Number(roomId),
+      senderEmail: senderEmail,
+      message: newMessage
+    };
+    ws.send(JSON.stringify(message));
+    setNewMessage('');
   };
 
   const handleKeyPress = (e) => {
@@ -108,15 +159,29 @@ const ChatPage = () => {
     }
   };
 
+  const disconnectWebSocket = async () => {
+    try {
+      await apiClient.post(`/v1/chat/room/${roomId}/read`);
+    } catch (error) {
+      console.error('읽음 처리 실패:', error);
+    }
+    if (ws) {
+      ws.close();
+    }
+  };
+
   return (
     <Wrapper>
+      <BackButton onClick={() => navigate(-1)}>← 뒤로가기</BackButton>
       <Card>
-        <Title>간단한 WebSocket 채팅</Title>
-        <MessageBox ref={messageBoxRef}>
+        <Title>채팅</Title>
+        <ChatBox ref={chatBoxRef}>
           {messages.map((msg, index) => (
-            <Message key={index}>{msg}</Message>
+            <ChatMessage key={index} sent={msg.senderEmail === senderEmail}>
+              <Sender>{msg.senderEmail}: </Sender>{msg.message}
+            </ChatMessage>
           ))}
-        </MessageBox>
+        </ChatBox>
         <FormRow>
           <Input
             type="text"

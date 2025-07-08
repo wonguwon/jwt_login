@@ -49,7 +49,7 @@ export const verifyEmailCode = async (email, code) => {
   } catch (error) {
     throw error;
   }
-};
+}; 
 
 // 회원 목록 조회
 export const getMemberList = async () => {
